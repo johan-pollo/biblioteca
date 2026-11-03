@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = Field(default=7, gt=0)
     cors_origins: list[str] = Field(default_factory=list)
     environment: Literal["dev", "test", "prod"] = "dev"
+    cloudinary_url: str | None = None
 
     @model_validator(mode="after")
     def validar_cors_produccion(self) -> "Settings":

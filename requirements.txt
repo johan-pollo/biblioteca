@@ -13,3 +13,5 @@ pwdlib[argon2]>=0.2
 pyjwt>=2.9
 python-multipart>=0.0.9
 slowapi>=0.1.9
+cloudinary
+python-dotenv

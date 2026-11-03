@@ -29,6 +29,7 @@ Todos los endpoints se sirven bajo `/api/v1`. La documentación interactiva est�
 | pwdlib con Argon2 | `pwdlib[argon2]>=0.2` |
 | SlowAPI | `>=0.1.9` |
 | pytest, pytest-cov, httpx | Dependencias de desarrollo de `requirements-dev.txt` |
+| Cloudinary | SDK oficial de Python para subida y almacenamiento de imágenes de portada |
 
 Las versiones instaladas concretas dependen del entorno y de la resolución de `pip`. Las restricciones de instalación están en [requirements.txt](./requirements.txt) y [requirements-dev.txt](./requirements-dev.txt).
 
@@ -134,6 +135,7 @@ erDiagram
         string isbn UK
         int anio_publicacion
         int ejemplares
+        string imagen_url
         int autor_id FK
     }
     LIBRO_CATEGORIA {
@@ -232,6 +234,12 @@ Inicia la API en desarrollo:
 fastapi dev app/main.py
 ```
 
+O utilizando Uvicorn con recarga automática:
+
+```powershell
+uvicorn app.main:app --reload
+```
+
 Abre `http://127.0.0.1:8000/docs`. Pulsa **Authorize** y autentícate con `/api/v1/auth/login`; utiliza el correo en el campo `username`. En producción la documentación Swagger y ReDoc se deshabilitan.
 
 ### Flujo sugerido para probar en `/docs`
@@ -260,6 +268,23 @@ El contenedor de API ejecuta `alembic upgrade head` antes de iniciar FastAPI. No
 docker compose down
 ```
 
+### Despliegue en Render (Web Service)
+
+Para desplegar la aplicación en **Render** como Web Service:
+
+- **Build Command:**
+  ```bash
+  pip install -r requirements.txt && alembic upgrade head
+  ```
+- **Start Command:**
+  ```bash
+  uvicorn app.main:app --host 0.0.0.0 --port $PORT
+  ```
+  *(o alternativamente: `fastapi run app/main.py --host 0.0.0.0 --port $PORT`)*
+
+> [!NOTE]
+> Asegúrate de configurar las variables de entorno necesarias (`DATABASE_URL`, `SECRET_KEY`, `ENVIRONMENT=prod`, etc.) en el panel de Render.
+
 ## Variables de entorno
 
 | Variable | Obligatoria | Valor de desarrollo sugerido | Descripción |
@@ -273,6 +298,7 @@ docker compose down
 | `CORS_ORIGINS` | No | `[]` | Lista JSON de orígenes permitidos, por ejemplo `["http://localhost:3000"]`. |
 | `ENVIRONMENT` | No | `dev` | Entorno: `dev`, `test` o `prod`. No se permite `*` en CORS en producción. |
 | `POSTGRES_PASSWORD` | No para Docker local | `biblioteca_dev` | Contraseña del contenedor PostgreSQL; el valor de desarrollo debe sustituirse en entornos compartidos o productivos. |
+| `CLOUDINARY_URL` | Opcional / Recomendado | `cloudinary://<api_key>:<api_secret>@<cloud_name>` | URL de conexión al SDK de Cloudinary para almacenar portadas de libros. |
 
 Las variables se leen en [app/core/config.py](./app/core/config.py), que centraliza `Settings` y `get_settings()` con caché.
 
@@ -285,6 +311,7 @@ Las variables se leen en [app/core/config.py](./app/core/config.py), que central
 | `0003_usuarios` | Crea usuarios, roles, vínculo opcional 1:1 con socio e índice funcional de email en minúsculas. |
 | `0004_refresh_tokens` | Crea el registro de refresh tokens por JTI, usuario, vencimiento y revocación. |
 | `0005_auditoria_prestamos` | Agrega a préstamos el usuario que registró la operación. |
+| `0006_imagen_url_libros` | Añade la columna `imagen_url` en la tabla `libros` para portadas Cloudinary. |
 
 Comandos útiles:
 
@@ -407,7 +434,8 @@ Todas las rutas de la tabla incluyen el prefijo `/api/v1`. Los listados paginado
 | `DELETE` | `/categorias/{categoria_id}` | Admin | Eliminar categoría. |
 | `GET` | `/libros` | Público | Buscar, filtrar, ordenar y paginar libros. |
 | `GET` | `/libros/{libro_id}` | Público | Consultar un libro. |
-| `POST`, `PATCH` | `/libros`, `/libros/{libro_id}` | Staff | Crear o editar libro. |
+| `POST`, `PATCH` | `/libros`, `/libros/{libro_id}` | Staff | Crear (soporta JSON o multipart con `imagen`) o editar libro. |
+| `POST` | `/libros/{libro_id}/portada` | Staff | Subir o actualizar archivo de imagen de portada en Cloudinary. |
 | `DELETE` | `/libros/{libro_id}` | Admin | Eliminar libro. |
 | `GET` | `/socios/me` | Socio propio | Consultar su perfil. |
 | `PATCH` | `/socios/me` | Socio propio | Editar nombre y teléfono únicamente. |

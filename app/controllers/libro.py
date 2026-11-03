@@ -27,6 +27,7 @@ def _formatear_libro_response(db: Session, libro: Libro) -> dict:
         "anio_publicacion": libro.anio_publicacion,
         "ejemplares": libro.ejemplares,
         "disponibles": disponibles,
+        "imagen_url": libro.imagen_url,
         "autor": libro.autor,
         "categorias": libro.categorias
     }
@@ -73,7 +74,7 @@ def obtener_libro(db: Session, libro_id: int):
         raise NoEncontrado("Libro no encontrado")
     return _formatear_libro_response(db, libro)
 
-def crear_libro(db: Session, datos: LibroCreate):
+def crear_libro(db: Session, datos: LibroCreate, imagen_url: Optional[str] = None):
     if db.query(Libro).filter(Libro.isbn == datos.isbn).first():
         raise Conflicto("Ya existe un libro con ese ISBN")
 
@@ -85,11 +86,14 @@ def crear_libro(db: Session, datos: LibroCreate):
     if len(categorias) != len(datos.categoria_ids):
         raise NoEncontrado("Una o más categorías especificadas no existen")
 
+    url_final = imagen_url if imagen_url is not None else datos.imagen_url
+
     libro = Libro(
         titulo=datos.titulo,
         isbn=datos.isbn,
         anio_publicacion=datos.anio_publicacion,
         ejemplares=datos.ejemplares,
+        imagen_url=url_final,
         autor_id=datos.autor_id,
         categorias=categorias
     )
@@ -98,7 +102,7 @@ def crear_libro(db: Session, datos: LibroCreate):
     db.refresh(libro)
     return obtener_libro(db, libro.id)
 
-def actualizar_libro(db: Session, libro_id: int, datos: LibroUpdate):
+def actualizar_libro(db: Session, libro_id: int, datos: LibroUpdate, imagen_url: Optional[str] = None):
     stmt = select(Libro).options(selectinload(Libro.autor), selectinload(Libro.categorias)).where(Libro.id == libro_id)
     libro = db.scalar(stmt)
     if not libro:
@@ -134,6 +138,11 @@ def actualizar_libro(db: Session, libro_id: int, datos: LibroUpdate):
         if nuevos_ejemplares < prestamos_activos:
             raise ReglaNegocio("El número de ejemplares no puede ser menor a los préstamos activos")
         libro.ejemplares = nuevos_ejemplares
+
+    if imagen_url is not None:
+        libro.imagen_url = imagen_url
+    elif "imagen_url" in datos_dict:
+        libro.imagen_url = datos_dict["imagen_url"]
 
     for campo in ["titulo", "anio_publicacion"]:
         if campo in datos_dict:

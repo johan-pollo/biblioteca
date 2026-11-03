@@ -17,6 +17,7 @@ class LibroCreate(BaseModel):
     ejemplares: int = Field(..., ge=1, le=50)
     autor_id: int
     categoria_ids: list[int] = Field(..., min_length=1, max_length=5)
+    imagen_url: Optional[str] = Field(None, max_length=500)
 
     @field_validator("titulo")
     def format_titulo(cls, v: str):
@@ -35,6 +36,7 @@ class LibroUpdate(BaseModel):
     ejemplares: Optional[int] = Field(None, ge=1, le=50)
     autor_id: Optional[int] = None
     categoria_ids: Optional[list[int]] = Field(None, min_length=1, max_length=5)
+    imagen_url: Optional[str] = Field(None, max_length=500)
 
     @field_validator("titulo")
     def format_titulo(cls, v: Optional[str]):
@@ -55,6 +57,7 @@ class LibroResponse(BaseModel):
     anio_publicacion: int
     ejemplares: int
     disponibles: int
+    imagen_url: Optional[str] = None
     autor: AutorResponse
     categorias: list[CategoriaResponse]
 

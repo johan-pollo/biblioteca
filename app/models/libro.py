@@ -17,6 +17,7 @@ class Libro(Base):
     isbn: Mapped[str] = mapped_column(String(13), unique=True, nullable=False)
     anio_publicacion: Mapped[int] = mapped_column(Integer, nullable=False)
     ejemplares: Mapped[int] = mapped_column(Integer, nullable=False)
+    imagen_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     autor_id: Mapped[int] = mapped_column(ForeignKey("autores.id"), nullable=False)
 
     autor = relationship("Autor", back_populates="libros")
